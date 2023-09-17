@@ -5,8 +5,36 @@ import { Textarea } from "./components/ui/textarea";
 import { Label } from "./components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select";
 import { Slider } from "./components/ui/slider";
+import { VideoInputForm } from "./components/video-input-form";
+import { PromptSelect } from "./components/prompt-select";
+import {useState} from "react"
+import { useCompletion } from "ai/react"
 
 export function App() {
+  const [temperature, setTemperature] = useState<number>(0.5)
+  const [videoId, setVideoId] = useState<string | null>(null)
+
+ 
+
+  const {
+    input, 
+    setInput, 
+    handleInputChange, 
+    handleSubmit, 
+    completion, 
+    isLoading
+  } = useCompletion({
+    api:'http://localhost:3333/ai/complete', 
+    body:{
+      videoId, 
+      temperature, 
+
+    }, 
+    headers:{
+      'Content-type':'application/json',
+    }
+  })
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="px-6 py-3 flex items-center justify-between border-b">
@@ -34,55 +62,28 @@ export function App() {
             <Textarea 
               placeholder="Inclua o prompt para ia"
               className="resize-none p-4 leading-relaxed"
+              value={input}
+              onChange={handleInputChange}
             />
             <Textarea 
               placeholder="Resultado gerado pela ia..." 
               readOnly
               className="resize-none p-4 leading-relaxed"
+              value={completion}
             />
           </div>
           <p className="text-small text-muted-foreground">Lembre-se: Voce pode utilizar a variavel no seu prompt...</p>
         </div>
         <aside className="w-96 space-y-6">
-          <form className="space-y-6">
-            <label 
-              htmlFor="video"
-              className="border flex rounded-md aspect-video cursor-pointer border-dashed text-sm flex-col gap-2 items-center justify-center text-muted-foreground hover:bg-primary/5"
-            >
-              <FileVideo className="w-4 h-4"/>
-              Selecione um video 
-            </label>
-            <input type="file" id="video" accept="video/mp4" className="sr-only"/>
-            <Separator/>
-            <div className="space-y-1 flex flex-col gap-2">
-              <Label htmlFor="transcription_prompt">Prompt de transcricao</Label>
-              <Textarea 
-                id="transcription_prompt" 
-                className="min-h-20 leading-relaxed "
-                placeholder="inclua palavras chaves mencionada no video separadas por virgula"
-              />
 
-              <Button type="submit" className="w-full ">
-                Carregar video
-                <Upload/>
-              </Button>
-            </div>
-          </form>
-
+          <VideoInputForm onVideoUploaded={setVideoId}/>
+          
           <Separator/>
 
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-6">
                 <Label>Prompt</Label>
-                <Select >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um prompt"/>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="title">Titulo do youtube</SelectItem>
-                    <SelectItem value="description">Descricao do youtube</SelectItem>
-                  </SelectContent>
-                </Select>
+                <PromptSelect onPromptSelected={setInput}/>
               </div>
               <Separator/>
               <div className="space-y-6">
@@ -104,11 +105,13 @@ export function App() {
                   min={0}
                   max={1}
                   step={0.1}
+                  value={[temperature]}
+                  onValueChange={value => setTemperature(value[0])}
                 />
                 <span className="block text-xs text-muted-foreground italic leading-relaxed">Valores mais altos tendem a deixar o resultado mais criativos e com possiveis erro</span>
               </div>
               <Separator/>
-              <Button type="submit" className="w-full">
+              <Button disabled={isLoading} type="submit" className="w-full">
                 Executar
                 <Wand2 className="w-4 h-4 ml-2"/>
               </Button>
